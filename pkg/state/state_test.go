@@ -203,6 +203,41 @@ func TestHelmState_flagsForUpgrade(t *testing.T) {
 			},
 		},
 		{
+			name: "verify",
+			defaults: HelmSpec{
+				Verify: false,
+			},
+			release: &ReleaseSpec{
+				Chart:     "test/chart",
+				Version:   "0.1",
+				Verify:    &enable,
+				Name:      "test-charts",
+				Namespace: "test-namespace",
+			},
+			want: []string{
+				"--version", "0.1",
+				"--verify",
+				"--namespace", "test-namespace",
+			},
+		},
+		{
+			name: "verify-from-default",
+			defaults: HelmSpec{
+				Verify: true,
+			},
+			release: &ReleaseSpec{
+				Chart:     "test/chart",
+				Version:   "0.1",
+				Verify:    &disable,
+				Name:      "test-charts",
+				Namespace: "test-namespace",
+			},
+			want: []string{
+				"--version", "0.1",
+				"--namespace", "test-namespace",
+			},
+		},
+		{
 			name: "enable-dns",
 			defaults: HelmSpec{
 				EnableDNS: false,
@@ -3753,5 +3788,40 @@ func TestGetOCIChartPath(t *testing.T) {
 				require.Equal(t, tt.expectedPath, path)
 			}
 		})
+	}
+}
+
+func TestIsOCIChart(t *testing.T) {
+	cases := []struct {
+		st       *HelmState
+		chart    string
+		expected bool
+	}{
+		{&HelmState{}, "oci://myrepo/mychart", true},
+		{&HelmState{}, "oci://myrepo/mychart:1.0.0", true},
+		{&HelmState{}, "myrepo/mychart", false},
+		{&HelmState{}, "myrepo/mychart:1.0.0", false},
+		{
+			&HelmState{
+				ReleaseSetSpec: ReleaseSetSpec{
+					Repositories: []RepositorySpec{
+						{
+							Name: "ocirepo",
+							URL:  "ocirepo.com",
+							OCI:  true,
+						},
+					},
+				},
+			},
+			"ocirepo/chart",
+			true,
+		},
+	}
+
+	for _, c := range cases {
+		actual := c.st.IsOCIChart(c.chart)
+		if actual != c.expected {
+			t.Errorf("IsOCIChart(%s) = %t; expected %t", c.chart, actual, c.expected)
+		}
 	}
 }
