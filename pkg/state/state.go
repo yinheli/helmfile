@@ -3687,7 +3687,7 @@ func (st *HelmState) getOCIChart(release *ReleaseSpec, tempDir string, helm helm
 				flags = append(flags, "--registry-config", repo.RegistryConfig)
 			}
 		}
-		// apprnd flags about keyring and verify
+		// append flags about keyring and verify
 		flags = st.appendVerifyFlags(flags, release)
 		flags = st.appendKeyringFlags(flags, release)
 
